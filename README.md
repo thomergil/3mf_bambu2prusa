@@ -16,7 +16,14 @@ This was created by analyzing 3mf files directly and not the specification. It h
 
 ## Installation
 
-1. Install requirements:
+1. Create and activate a virtual environment:
+
+```
+python3 -m venv env
+source env/bin/activate
+```
+
+2. Install requirements:
 
 ```
 pip install -r requirements.txt
@@ -25,8 +32,10 @@ pip install -r requirements.txt
 ## Usage
 
 ```
-python bambu2prusa.py <input.3mf> <output.3mf>
+python bambu2prusa.py <input.3mf> [output.3mf]
 ```
+
+If no output file is specified, the default is `<input>-prusa.3mf`.
 
 ### Options
 
@@ -36,11 +45,14 @@ python bambu2prusa.py <input.3mf> <output.3mf>
 ### Examples
 
 ```
-# Basic conversion
+# Basic conversion (outputs my_bambu_model-prusa.3mf)
+python bambu2prusa.py my_bambu_model.3mf
+
+# Specify output filename
 python bambu2prusa.py my_bambu_model.3mf my_prusa_model.3mf
 
 # With verbose output
-python bambu2prusa.py -v my_bambu_model.3mf my_prusa_model.3mf
+python bambu2prusa.py -v my_bambu_model.3mf
 ```
 
 ## License

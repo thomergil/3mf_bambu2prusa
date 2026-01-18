@@ -303,16 +303,25 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  %(prog)s input.3mf output.3mf
-  %(prog)s -v input.3mf output.3mf
+  %(prog)s input.3mf                  # outputs input-prusa.3mf
+  %(prog)s input.3mf output.3mf       # outputs output.3mf
+  %(prog)s -v input.3mf               # verbose mode
         """
     )
     parser.add_argument("input", help="Input Bambu 3mf file")
-    parser.add_argument("output", help="Output Prusa 3mf file")
+    parser.add_argument("output", nargs='?', default=None,
+                        help="Output Prusa 3mf file (default: <input>-prusa.3mf)")
     parser.add_argument("-v", "--verbose", action="store_true",
                         help="Enable verbose/debug output")
 
     args = parser.parse_args()
+
+    # Set default output filename if not provided
+    if args.output is None:
+        base = args.input
+        if base.lower().endswith('.3mf'):
+            base = base[:-4]
+        args.output = base + '-prusa.3mf'
 
     # Configure logging based on verbosity
     if args.verbose:
