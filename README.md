@@ -5,6 +5,7 @@ A command-line tool to convert 3mf files containing colored, painted models crea
 ## Credits
 
 **Original Author:** Jaime C. Acosta
+
 **Original Project:** GUI-based Bambu to Prusa 3mf converter
 
 This tool was originally created by Jaime C. Acosta as a GUI application using tkinter. The conversion logic and 3mf file format analysis are entirely his work. This version has been modified to run as a CLI tool only.
