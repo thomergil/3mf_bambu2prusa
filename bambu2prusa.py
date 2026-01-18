@@ -1,87 +1,57 @@
 ###
 # main_str.py
-# This script provides a GUI for converting Bambu 3mf files to Prusa 3mf files.
-# It allows users to select input and output files, decompress the input zip file,
+# This script provides a CLI for converting Bambu 3mf files to Prusa 3mf files.
+# It allows users to specify input and output files, decompress the input zip file,
 # process the 3mf files, and generate a new 3mf file with the converted content.
-# The script uses lxml for XML parsing and tkinter for the GUI.
+# The script uses lxml for XML parsing.
 # @Author: Jaime C. Acosta
 # @Date: 2025-08-09
-# @Version: 1.0
+# @Version: 1.1
 # @License: GPL 3.0
-# @Description: A GUI application to convert Bambu 3mf files to Prusa 3mf files.
+# @Description: A CLI tool to convert Bambu 3mf files to Prusa 3mf files.
 ###
+import argparse
 import os
 import shutil
 import tempfile
 import zipfile
 import re
-import io
 import logging
-from tkinter import Tk, Label, Button, filedialog
 import lxml.etree as ET
 from pathlib import Path
 
-class ZipProcessorGUI:
 
-    def __init__(self, master):
-        logging.debug("Initializing ZipProcessorGUI")
-        self.master = master
-        master.title("Bambu2Prusa 3mf Processor")
+class Bambu2PrusaConverter:
 
-        self.label = Label(master, text="Select input and output 3mf files.")
-        self.label.pack(pady=10)
-
-        self.select_input_button = Button(master, text="Select Input Bambu 3mf", command=self.select_input)
-        self.select_input_button.pack(pady=5)
-
-        self.select_output_button = Button(master, text="Select Output Prusa 3mf", command=self.select_output)
-        self.select_output_button.pack(pady=5)
-
-        self.process_button = Button(master, text="Process", command=self.bambu3mf2prusa3mf)
-        self.process_button.pack(pady=10)
-
-        self.status_label = Label(master, text="")
-        self.status_label.pack(pady=5)
-
-        self.input_file = ""
-        self.output_file = ""
+    def __init__(self, input_file, output_file):
+        logging.debug("Initializing Bambu2PrusaConverter")
+        self.input_file = input_file
+        self.output_file = output_file
 
         # Define paths for templates and directories
+        script_dir = os.path.dirname(os.path.abspath(__file__))
         self.template_paths = {}
-        self.template_paths['models_template'] = "3mf_template/3D/3dmodel_template.xml"
-        self.template_paths['3D'] = "3mf_template/3D/"
-        self.template_paths['.rels_template'] = "3mf_template/_rels/.rels_template.xml"
-        self.template_paths['.rels'] = "3mf_template/_rels/"
-        self.template_paths['Content_Types_template'] = "3mf_template/[Content_Types].xml"
-        self.template_paths['Metadata'] = "3mf_template/Metadata/"
+        self.template_paths['models_template'] = os.path.join(script_dir, "3mf_template/3D/3dmodel_template.xml")
+        self.template_paths['3D'] = os.path.join(script_dir, "3mf_template/3D/")
+        self.template_paths['.rels_template'] = os.path.join(script_dir, "3mf_template/_rels/.rels_template.xml")
+        self.template_paths['.rels'] = os.path.join(script_dir, "3mf_template/_rels/")
+        self.template_paths['Content_Types_template'] = os.path.join(script_dir, "3mf_template/[Content_Types].xml")
+        self.template_paths['Metadata'] = os.path.join(script_dir, "3mf_template/Metadata/")
 
         self.temp_3mf_dir = tempfile.TemporaryDirectory().name
 
         self.bambu_model_paths = []
-        #contains output object file names and the object ids within those files
+        # contains output object file names and the object ids within those files
         self.prusa_model_paths = {}
-
-    def select_input(self):
-        logging.debug("Selecting input file")
-        # Use filedialog to select a 3mf file
-        self.input_file = filedialog.askopenfilename(filetypes=[("3mf files", "*.3mf")])
-        self.status_label.config(text=f"Input file selected: {os.path.basename(self.input_file)}")
-
-    def select_output(self):
-        logging.debug("Selecting output file")
-        # Use filedialog to select an output file
-        self.output_file = filedialog.asksaveasfilename(defaultextension=".3mf", filetypes=[("3mf files", "*.3mf")])
-        self.status_label.config(text=f"Output file selected: {os.path.basename(self.output_file)}")
 
     def decompress_zip(self, input_file=None):
         # Decompress the zip file to a temporary directory
         logging.debug("Decompressing zip file")
-        if input_file == None:
+        if input_file is None:
             input_file = self.input_file
         # Check if input file is provided
         if not input_file:
-            self.status_label.config(text="Please provide both input and output files.")
-            return
+            raise ValueError("Please provide an input file.")
         # Create a temporary directory for extraction
         tempdir = tempfile.TemporaryDirectory().name
 
@@ -91,18 +61,17 @@ class ZipProcessorGUI:
         # return the temporary directory path that contains the extracted files
         return tempdir
             
-    def bambu3mf2prusa3mf(self, input_file=None, output_file=None, extracted_path=None):
+    def convert(self, input_file=None, output_file=None, extracted_path=None):
         logging.debug("Converting Bambu 3mf to Prusa 3mf")
         # Check if input and output files are provided
         try:
-            if input_file == None:
+            if input_file is None:
                 input_file = self.input_file
-            if output_file == None:
+            if output_file is None:
                 output_file = self.output_file
 
             if not input_file or not output_file:
-                self.status_label.config(text="Please provide both input and output files.")
-                return
+                raise ValueError("Please provide both input and output files.")
             #if we haven't specified an extracted path, we will decompress the zip file
             if extracted_path==None:
                 extracted_path = self.decompress_zip(input_file)
@@ -132,11 +101,12 @@ class ZipProcessorGUI:
 
             # Write the final Prusa model files
             self.generate3mf_file(prusamodel_filenames, output_file)
-            self.status_label.config(text=f"Output file created: {os.path.basename(output_file)}")
+            print(f"Output file created: {os.path.basename(output_file)}")
             logging.info(f"Output file created: {os.path.basename(output_file)}")
         except Exception as e:
             logging.error(f"An error occurred during processing: {e}")
-            self.status_label.config(text=f"Error: {e}")
+            print(f"Error: {e}")
+            raise
         finally:
             # Clean up the temporary directory
             self.cleanup()
@@ -225,17 +195,16 @@ class ZipProcessorGUI:
 
         except FileNotFoundError:
             logging.error(f"Error: File '{self.template_paths['models_template']}' not found.")
-            self.status_label.config(text=f"Error reading {self.template_paths['models_template']}: {e}")
-            return
+            raise
         except Exception as e:
             logging.error(f"An error occurred: {e}")
+            raise
 
     def compress_zip(self, ifolder_path, output_file=None):
         logging.debug("Compressing files into zip")
         # Check if the input folder path is provided
         if not ifolder_path:
-            self.status_label.config(text="No input folder provided for compression.")
-            return
+            raise ValueError("No input folder provided for compression.")
         if output_file is None:
             output_file = self.output_file
         # Re-zip contents into the output file
@@ -246,7 +215,6 @@ class ZipProcessorGUI:
                     arcname = os.path.relpath(file_path, ifolder_path)
                     zip_out.write(file_path, arcname)
         logging.info(f"Compressed files into {output_file}")
-        self.status_label.config(text=f"Output file created: {os.path.basename(output_file)}")
 
     def write_prusa_model(self, filename, prusa_model):
         logging.debug("Writing Prusa object")
@@ -272,16 +240,14 @@ class ZipProcessorGUI:
         if output_file is None:
             output_file = self.output_file
         if not output_file:
-            self.status_label.config(text="Please provide an output file.")
-            return
+            raise ValueError("Please provide an output file.")
         # Check if there are any models to generate the 3mf file structure
         if not final_prusamodels:
             logging.error("No models to generate 3mf file structure.")
-            self.status_label.config(text="No models to generate 3mf file structure.")
-            return
+            raise ValueError("No models to generate 3mf file structure.")
         try:
             # Create the temporary directory for the 3mf file structure
-            self.status_label.config(text="Generating 3mf file structure...")
+            print("Generating 3mf file structure...")
             tempdir = self.temp_3mf_dir
             # Create the necessary directories
             rels_dir = os.path.join(tempdir, "_rels")
@@ -328,18 +294,46 @@ class ZipProcessorGUI:
             shutil.rmtree(self.temp_3mf_dir)
         # Reset the temporary directory
         self.temp_3mf_dir = tempfile.TemporaryDirectory().name
-        self.status_label.config(text="Temporary files cleaned up.")
+        logging.debug("Temporary files cleaned up.")
+
 
 def main():
-    root = Tk()
-    app = ZipProcessorGUI(root)
-    root.mainloop()
-    # If the GUI is not needed, you can run the conversion directly
-    # b3mf = f"input.3mf"
-    # output = f"output.3mf"
-    # a = ZipProcessorGUI(root)
-    # a.bambu3mf2prusa3mf(b3mf, output)
+    parser = argparse.ArgumentParser(
+        description="Convert Bambu 3mf files to Prusa 3mf files.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  %(prog)s input.3mf output.3mf
+  %(prog)s -v input.3mf output.3mf
+        """
+    )
+    parser.add_argument("input", help="Input Bambu 3mf file")
+    parser.add_argument("output", help="Output Prusa 3mf file")
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="Enable verbose/debug output")
+
+    args = parser.parse_args()
+
+    # Configure logging based on verbosity
+    if args.verbose:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO)
+
+    # Validate input file exists
+    if not os.path.exists(args.input):
+        print(f"Error: Input file '{args.input}' not found.")
+        return 1
+
+    # Run the conversion
+    converter = Bambu2PrusaConverter(args.input, args.output)
+    try:
+        converter.convert()
+        return 0
+    except Exception as e:
+        print(f"Conversion failed: {e}")
+        return 1
+
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
-    main()
+    exit(main())

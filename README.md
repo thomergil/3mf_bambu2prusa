@@ -1,13 +1,47 @@
-# 3mf_bambu2prusa
-This application is meant to convert 3mf files that may contain colored, painted models created with bambu slicer to prusaslicer-compatible files. This was created by analyzing 3mf files directly and not the specification.
+# bambu2prusa
 
-Step to run
-1. Install requirements
+A command-line tool to convert 3mf files containing colored, painted models created with Bambu Studio to PrusaSlicer-compatible files.
+
+## Credits
+
+**Original Author:** Jaime C. Acosta
+**Original Project:** GUI-based Bambu to Prusa 3mf converter
+
+This tool was originally created by Jaime C. Acosta as a GUI application using tkinter. The conversion logic and 3mf file format analysis are entirely his work. This version has been modified to run as a CLI tool only.
+
+## Description
+
+This was created by analyzing 3mf files directly and not the specification. It handles the conversion of paint/color data from Bambu's format to Prusa's `slic3rpe:mmu_segmentation` format.
+
+## Installation
+
+1. Install requirements:
 
 ```
 pip install -r requirements.txt
 ```
-2. Start the GUI
+
+## Usage
+
 ```
-python main_str.py
+python bambu2prusa.py <input.3mf> <output.3mf>
 ```
+
+### Options
+
+- `-v, --verbose` - Enable verbose/debug output
+- `-h, --help` - Show help message
+
+### Examples
+
+```
+# Basic conversion
+python bambu2prusa.py my_bambu_model.3mf my_prusa_model.3mf
+
+# With verbose output
+python bambu2prusa.py -v my_bambu_model.3mf my_prusa_model.3mf
+```
+
+## License
+
+GPL 3.0
